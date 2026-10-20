@@ -29,3 +29,7 @@ android {
         jvmTarget = "17"
     }
 }
+
+dependencies {
+    implementation(project(":core:projector-control"))
+}
