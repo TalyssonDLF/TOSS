@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "TOSS"
 include(":apps:toss-home")
+include(":core:capabilities")
+include(":core:projector-control")
