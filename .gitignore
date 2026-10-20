@@ -1,0 +1,34 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Device survey outputs (may contain device-specific or sensitive identifiers)
+survey-*/
+**/evidence/private/
+
+# Firmware / dumps / proprietary binaries
+*.img
+*.bin
+*.rom
+*.dump
+*.apk.orig
+
+# Secrets
+.env
+.env.*
+*.keystore
+*.jks
