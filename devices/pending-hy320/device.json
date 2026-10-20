@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "device_id": "pending_identification",
+  "identity": {
+    "brand": "Magcubic",
+    "commercial_model": "HY320 Mini",
+    "manufacturer": null,
+    "board": null,
+    "soc": null,
+    "gpu": null,
+    "ram_mb": null,
+    "storage_mb": null,
+    "android_version": null,
+    "sdk_level": null,
+    "build_fingerprint": null,
+    "kernel_version": null
+  },
+  "security": {
+    "selinux": null,
+    "adb_root": null,
+    "bootloader_locked": null,
+    "avb": null,
+    "secure_boot": null,
+    "verified_boot_state": null
+  },
+  "android_capabilities": {
+    "device_owner": null,
+    "write_secure_settings": null,
+    "treble": null,
+    "dynamic_partitions": null,
+    "ab_partitions": null
+  },
+  "projector": {
+    "focus": { "supported": null, "method": "unknown" },
+    "keystone": { "supported": null, "method": "unknown" },
+    "brightness": { "supported": null, "method": "unknown" },
+    "hdmi_input": { "supported": null, "pipeline": "unknown" }
+  },
+  "media": {
+    "hardware_decoding": {
+      "h264": null,
+      "hevc": null,
+      "vp8": null,
+      "vp9": null,
+      "av1": null
+    },
+    "codec_stack": "unknown"
+  },
+  "thermal": {
+    "sensor_paths": [],
+    "cooling_method": "unknown",
+    "thermal_daemons": [],
+    "throttling_observed": null
+  },
+  "input": {
+    "devices": [],
+    "keylayout_files": [],
+    "special_keys": {
+      "focus_up": null,
+      "focus_down": null,
+      "keystone": null,
+      "source": null
+    }
+  },
+  "recovery": {
+    "method": "unknown",
+    "backup_completed": false,
+    "restore_tested": false
+  },
+  "artifacts": []
+}
