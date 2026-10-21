@@ -1,39 +1,53 @@
 package com.taly.toss.home
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.view.KeyEvent
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
 import kotlin.math.min
 
 /**
- * First executable TOSS Home visual prototype.
- *
- * Intentionally implemented with the Android Canvas/View stack and no UI dependency.
- * This is NOT the final decision between Views and Compose: it is the lightweight
- * baseline that will later be benchmarked on the real projector.
+ * Lightweight TV-first TOSS home.
+ * Motion is event-driven only: there are no permanent loops, blur passes or heavy effects.
  */
-class TossHomeView(context: Context) : View(context) {
-
-    private val bg = Paint(Paint.ANTI_ALIAS_FLAG)
+class TossHomeView(
+    context: Context,
+    private val youtubeIcon: Drawable? = null,
+    private val onYouTube: () -> Result<Unit>,
+    private val onHdmi: () -> Result<Unit>,
+    private val onCinema: () -> Result<Unit>,
+    private val onCast: () -> Result<Unit>,
+    private val onFiles: () -> Result<Unit>,
+    private val onApps: () -> Unit,
+    private val onMusic: () -> Result<Unit>,
+    private val onBrowser: () -> Result<Unit>,
+    private val onProjector: () -> Unit,
+    private val onSettings: () -> Unit
+) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.create("sans", Typeface.NORMAL) }
-    private val bold = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.create("sans", Typeface.BOLD) }
+    private val medium = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.create("sans", Typeface.BOLD) }
 
-    private val purple = Color.rgb(151, 91, 255)
-    private val purpleBright = Color.rgb(184, 137, 255)
-    private val white = Color.rgb(246, 244, 251)
-    private val muted = Color.rgb(177, 171, 191)
-    private val surface = Color.argb(205, 18, 15, 27)
-    private val surfaceSoft = Color.argb(175, 27, 22, 39)
+    private val bg = Color.rgb(7, 7, 12)
+    private val surface = Color.rgb(20, 18, 29)
+    private val surfaceHigh = Color.rgb(31, 25, 44)
+    private val purple = Color.rgb(132, 72, 255)
+    private val purpleBright = Color.rgb(188, 145, 255)
+    private val white = Color.rgb(247, 246, 250)
+    private val muted = Color.rgb(164, 159, 177)
 
     private val shortcuts = listOf("Cinema", "YouTube", "HDMI", "Espelhar", "Arquivos", "Apps", "Música", "Navegador")
     private val recommendations = listOf("Filmes", "Séries", "Sua biblioteca", "Recentes")
 
-    // 0 hero, 1..8 shortcuts, 9..12 recommendations, 13 projector, 14 settings
     private var selected = 1
+    private var focusProgress = 1f
+    private var enterProgress = 0f
+    private var focusAnimator: ValueAnimator? = null
+    private var enterAnimator: ValueAnimator? = null
 
     init {
         isFocusable = true
@@ -41,245 +55,347 @@ class TossHomeView(context: Context) : View(context) {
         requestFocus()
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        val sx = width / 1280f
-        val sy = height / 720f
-        val scale = min(sx, sy)
-        val dx = (width - 1280f * scale) / 2f
-        val dy = (height - 720f * scale) / 2f
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        enterAnimator?.cancel()
+        enterAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 380L
+            interpolator = DecelerateInterpolator(1.6f)
+            addUpdateListener {
+                enterProgress = it.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
+    }
 
+    override fun onDetachedFromWindow() {
+        focusAnimator?.cancel()
+        enterAnimator?.cancel()
+        super.onDetachedFromWindow()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val scale = min(width / 1280f, height / 720f)
         canvas.save()
-        canvas.translate(dx, dy)
+        canvas.translate((width - 1280f * scale) / 2f, (height - 720f * scale) / 2f)
         canvas.scale(scale, scale)
+
         drawBackground(canvas)
-        drawStatus(canvas)
+        canvas.save()
+        canvas.translate(0f, 12f * (1f - enterProgress))
+        drawTopBar(canvas)
         drawHero(canvas)
         drawShortcuts(canvas)
         drawRecommendations(canvas)
         drawBottomActions(canvas)
         canvas.restore()
+        canvas.restore()
     }
 
     private fun drawBackground(c: Canvas) {
-        bg.shader = LinearGradient(0f, 0f, 1280f, 720f,
-            intArrayOf(Color.rgb(22, 11, 37), Color.rgb(10, 8, 16), Color.rgb(6, 6, 10)),
-            floatArrayOf(0f, .48f, 1f), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, 1280f, 720f, bg)
-        bg.shader = null
-
-        // Atmospheric violet light replacing artwork until media artwork is wired.
-        paint.shader = RadialGradient(905f, 92f, 430f,
-            intArrayOf(Color.argb(100, 119, 45, 219), Color.argb(30, 85, 35, 155), Color.TRANSPARENT),
-            null, Shader.TileMode.CLAMP)
-        c.drawCircle(905f, 92f, 430f, paint)
+        c.drawColor(bg)
+        paint.shader = LinearGradient(
+            0f, 0f, 1280f, 720f,
+            intArrayOf(Color.rgb(24, 11, 43), Color.rgb(9, 8, 15), bg),
+            floatArrayOf(0f, .47f, 1f), Shader.TileMode.CLAMP
+        )
+        c.drawRect(0f, 0f, 1280f, 720f, paint)
         paint.shader = null
 
-        paint.shader = LinearGradient(0f, 250f, 0f, 620f,
-            Color.TRANSPARENT, Color.argb(235, 7, 6, 11), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 250f, 1280f, 620f, paint)
+        // Cheap static ambient lighting instead of runtime blur.
+        paint.shader = RadialGradient(1040f, 110f, 420f, Color.argb(70, 116, 55, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawCircle(1040f, 110f, 420f, paint)
         paint.shader = null
+        paint.color = Color.argb(18, 255, 255, 255)
+        c.drawRect(0f, 0f, 1280f, 1f, paint)
     }
 
-    private fun drawStatus(c: Canvas) {
+    private fun drawTopBar(c: Canvas) {
+        medium.color = white
+        medium.textSize = 18f
+        medium.textAlign = Paint.Align.LEFT
+        c.drawText("Início", 64f, 48f, medium)
+
         text.color = muted
-        text.textSize = 18f
-        text.textAlign = Paint.Align.RIGHT
-        c.drawText("Wi-Fi   •   21:37", 1220f, 48f, text)
+        text.textSize = 15f
+        c.drawText("Cinema", 128f, 48f, text)
+        c.drawText("Biblioteca", 198f, 48f, text)
+        c.drawText("Apps", 292f, 48f, text)
+
+        val status = RectF(1030f, 24f, 1216f, 58f)
+        paint.color = Color.argb(115, 27, 23, 37)
+        c.drawRoundRect(status, 17f, 17f, paint)
+        text.textAlign = Paint.Align.CENTER
+        text.textSize = 14f
+        text.color = Color.rgb(205, 199, 218)
+        c.drawText("Wi-Fi   •   TOSS 0.1", status.centerX(), 46f, text)
     }
 
     private fun drawHero(c: Canvas) {
-        val r = RectF(64f, 70f, 1216f, 292f)
-        drawCard(c, r, selected == 0, hero = true)
+        val r = RectF(64f, 78f, 1216f, 306f)
+        drawCard(c, r, selected == 0, 28f, true)
+
+        c.save()
+        c.clipRoundRectCompat(r, 28f)
+        paint.shader = LinearGradient(
+            r.left, r.top, r.right, r.bottom,
+            intArrayOf(Color.rgb(28, 18, 47), Color.rgb(24, 15, 43), Color.rgb(12, 11, 18)),
+            floatArrayOf(0f, .58f, 1f), Shader.TileMode.CLAMP
+        )
+        c.drawRect(r, paint)
+        paint.shader = null
+
+        // Abstract cinematic artwork, deliberately asset-free and inexpensive.
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2f
+        for (i in 0..4) {
+            paint.color = Color.argb(38 - i * 5, 190, 145, 255)
+            val radius = 56f + i * 30f
+            c.drawCircle(1082f, 188f, radius, paint)
+        }
+        paint.style = Paint.Style.FILL
+        paint.shader = RadialGradient(1082f, 188f, 165f, Color.argb(105, 132, 72, 255), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawCircle(1082f, 188f, 165f, paint)
+        paint.shader = null
+        c.restore()
+
+        if (selected == 0) drawFocusRing(c, r, 28f)
 
         text.textAlign = Paint.Align.LEFT
         text.color = purpleBright
-        text.textSize = 17f
-        text.typeface = Typeface.create("sans", Typeface.BOLD)
-        c.drawText("CONTINUAR ASSISTINDO", 98f, 112f, text)
+        text.textSize = 14f
+        medium.letterSpacing = .08f
+        c.drawText("CONTINUAR ASSISTINDO", 100f, 120f, text)
+        medium.letterSpacing = 0f
 
-        bold.color = white
-        bold.textSize = 38f
-        bold.textAlign = Paint.Align.LEFT
-        c.drawText("Continue de onde parou", 98f, 164f, bold)
+        medium.color = white
+        medium.textSize = 42f
+        c.drawText("Cinema TOSS", 98f, 174f, medium)
+        text.color = Color.rgb(190, 184, 202)
+        text.textSize = 18f
+        c.drawText("Seus vídeos, sua biblioteca e reprodução em um só lugar.", 100f, 207f, text)
+
+        val play = RectF(100f, 236f, 254f, 280f)
+        paint.color = purple
+        c.drawRoundRect(play, 22f, 22f, paint)
+        paint.color = white
+        c.drawPath(Path().apply {
+            moveTo(122f, 249f); lineTo(122f, 267f); lineTo(136f, 258f); close()
+        }, paint)
+        medium.textSize = 15f
+        medium.color = white
+        c.drawText("Continuar", 148f, 264f, medium)
 
         text.color = muted
-        text.textSize = 20f
-        text.typeface = Typeface.DEFAULT
-        c.drawText("Seu conteúdo recente aparecerá aqui", 98f, 200f, text)
-
-        // Progress / play affordance.
-        paint.color = Color.argb(100, 255, 255, 255)
-        c.drawRoundRect(RectF(98f, 242f, 520f, 248f), 3f, 3f, paint)
-        paint.color = purple
-        c.drawRoundRect(RectF(98f, 242f, 286f, 248f), 3f, 3f, paint)
-
-        paint.color = Color.argb(185, 151, 91, 255)
-        c.drawCircle(1110f, 181f, 38f, paint)
-        paint.color = white
-        val path = Path().apply {
-            moveTo(1101f, 163f); lineTo(1101f, 199f); lineTo(1128f, 181f); close()
-        }
-        c.drawPath(path, paint)
+        text.textSize = 14f
+        c.drawText("Biblioteca local", 276f, 263f, text)
     }
 
     private fun drawShortcuts(c: Canvas) {
-        text.textAlign = Paint.Align.LEFT
-        bold.color = white
-        bold.textSize = 21f
-        c.drawText("Acesso rápido", 64f, 335f, bold)
-
+        sectionTitle(c, "Acesso rápido", 64f, 346f)
         val gap = 12f
-        val total = 1152f
-        val cardW = (total - gap * 7) / 8f
+        val cardWidth = (1152f - gap * 7f) / 8f
         shortcuts.forEachIndexed { i, label ->
-            val left = 64f + i * (cardW + gap)
-            val r = RectF(left, 354f, left + cardW, 444f)
-            drawCard(c, r, selected == i + 1)
-            drawShortcutGlyph(c, r.centerX(), 383f, i, selected == i + 1)
-            text.textAlign = Paint.Align.CENTER
-            text.textSize = 16f
-            text.color = if (selected == i + 1) white else Color.rgb(221, 217, 229)
-            c.drawText(label, r.centerX(), 425f, text)
-        }
-    }
+            val left = 64f + i * (cardWidth + gap)
+            val base = RectF(left, 365f, left + cardWidth, 457f)
+            val focused = selected == i + 1
+            val r = animatedRect(base, focused)
+            drawCard(c, r, focused, 18f)
 
-    private fun drawShortcutGlyph(c: Canvas, x: Float, y: Float, index: Int, focused: Boolean) {
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 2.4f
-        paint.strokeCap = Paint.Cap.ROUND
-        paint.color = if (focused) purpleBright else Color.rgb(193, 183, 211)
-        when (index) {
-            0 -> { // cinema/play
-                c.drawRoundRect(RectF(x - 15, y - 11, x + 15, y + 11), 5f, 5f, paint)
-                val p = Path().apply { moveTo(x - 3, y - 6); lineTo(x - 3, y + 6); lineTo(x + 7, y); close() }
-                c.drawPath(p, paint)
+            if (i == 1 && youtubeIcon != null) {
+                val iconSize = if (focused) 43 else 40
+                youtubeIcon.setBounds(
+                    (r.centerX() - iconSize / 2f).toInt(),
+                    (r.top + 15f).toInt(),
+                    (r.centerX() + iconSize / 2f).toInt(),
+                    (r.top + 15f + iconSize).toInt()
+                )
+                youtubeIcon.draw(c)
+            } else {
+                drawGlyph(c, r.centerX(), r.top + 35f, i, focused)
             }
-            1 -> { c.drawRoundRect(RectF(x - 16, y - 11, x + 16, y + 11), 6f, 6f, paint); c.drawLine(x-3,y-6,x+7,y,paint); c.drawLine(x+7,y,x-3,y+6,paint) }
-            2 -> { c.drawRect(x - 15, y - 10, x + 15, y + 10, paint); c.drawLine(x-8,y+16,x+8,y+16,paint); c.drawLine(x,y+10,x,y+16,paint) }
-            3 -> { c.drawArc(RectF(x-15,y-15,x+15,y+15),215f,110f,false,paint); c.drawArc(RectF(x-9,y-9,x+9,y+9),215f,110f,false,paint); c.drawCircle(x-6,y+7,2f,paint) }
-            4 -> { c.drawRect(x-15,y-8,x+15,y+11,paint); c.drawLine(x-13,y-8,x-5,y-15,paint); c.drawLine(x-5,y-15,x+3,y-15,paint) }
-            5 -> { for (xx in listOf(-9f,9f)) for (yy in listOf(-9f,9f)) c.drawRoundRect(RectF(x+xx-5,y+yy-5,x+xx+5,y+yy+5),2f,2f,paint) }
-            6 -> { c.drawCircle(x-7,y+8,6f,paint); c.drawCircle(x+10,y+4,6f,paint); c.drawLine(x-1,y+8,x-1,y-12,paint); c.drawLine(x-1,y-12,x+16,y-16,paint); c.drawLine(x+16,y-16,x+16,y+4,paint) }
-            else -> { c.drawCircle(x,y,14f,paint); c.drawLine(x-14,y,x+14,y,paint); c.drawArc(RectF(x-7,y-14,x+7,y+14),90f,180f,false,paint); c.drawArc(RectF(x-7,y-14,x+7,y+14),270f,180f,false,paint) }
+
+            text.textAlign = Paint.Align.CENTER
+            text.textSize = 15f
+            text.color = if (focused) white else Color.rgb(220, 216, 228)
+            c.drawText(label, r.centerX(), r.bottom - 15f, text)
         }
-        paint.style = Paint.Style.FILL
     }
 
     private fun drawRecommendations(c: Canvas) {
-        bold.color = white
-        bold.textSize = 21f
-        bold.textAlign = Paint.Align.LEFT
-        c.drawText("Para você", 64f, 492f, bold)
-
-        val cardW = 270f
+        sectionTitle(c, "Para você", 64f, 503f)
         recommendations.forEachIndexed { i, label ->
             val left = 64f + i * 288f
-            val r = RectF(left, 511f, left + cardW, 624f)
-            drawCard(c, r, selected == i + 9)
-            paint.shader = LinearGradient(r.left, r.top, r.right, r.bottom,
-                Color.argb(80, 151, 91, 255), Color.argb(5, 151, 91, 255), Shader.TileMode.CLAMP)
-            c.drawRoundRect(r, 18f, 18f, paint)
+            val base = RectF(left, 522f, left + 270f, 626f)
+            val focused = selected == i + 9
+            val r = animatedRect(base, focused)
+            drawCard(c, r, focused, 20f)
+
+            paint.shader = LinearGradient(
+                r.left, r.top, r.right, r.bottom,
+                Color.argb(if (focused) 100 else 58, 132, 72, 255),
+                Color.argb(4, 132, 72, 255), Shader.TileMode.CLAMP
+            )
+            c.drawRoundRect(r, 20f, 20f, paint)
             paint.shader = null
+
+            paint.color = Color.argb(95, 255, 255, 255)
+            c.drawRoundRect(RectF(r.left + 18f, r.top + 18f, r.left + 54f, r.top + 22f), 2f, 2f, paint)
+            text.textAlign = Paint.Align.LEFT
             text.color = white
             text.textSize = 18f
-            text.textAlign = Paint.Align.LEFT
             c.drawText(label, r.left + 18f, r.bottom - 20f, text)
         }
     }
 
     private fun drawBottomActions(c: Canvas) {
-        drawPill(c, RectF(64f, 654f, 207f, 700f), "Projetor", selected == 13)
-        drawPill(c, RectF(1052f, 654f, 1216f, 700f), "Ajustes", selected == 14)
+        drawPill(c, RectF(64f, 656f, 208f, 700f), "Projetor", selected == 13)
+        drawPill(c, RectF(1050f, 656f, 1216f, 700f), "Ajustes", selected == 14)
+        text.textAlign = Paint.Align.CENTER
+        text.textSize = 13f
+        text.color = Color.rgb(113, 108, 126)
+        c.drawText("Use o controle para navegar", 640f, 684f, text)
     }
 
-    private fun drawPill(c: Canvas, r: RectF, label: String, focused: Boolean) {
-        paint.color = if (focused) Color.argb(235, 91, 46, 160) else Color.argb(150, 25, 21, 34)
-        c.drawRoundRect(r, 23f, 23f, paint)
-        if (focused) {
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 2f
-            paint.color = purpleBright
-            c.drawRoundRect(r, 23f, 23f, paint)
-            paint.style = Paint.Style.FILL
-        }
+    private fun sectionTitle(c: Canvas, label: String, x: Float, y: Float) {
+        medium.color = white
+        medium.textSize = 19f
+        medium.textAlign = Paint.Align.LEFT
+        c.drawText(label, x, y, medium)
+    }
+
+    private fun animatedRect(base: RectF, focused: Boolean): RectF {
+        if (!focused) return base
+        val grow = 2f + 3f * focusProgress
+        return RectF(base.left - grow, base.top - grow, base.right + grow, base.bottom + grow)
+    }
+
+    private fun drawPill(c: Canvas, base: RectF, label: String, focused: Boolean) {
+        val r = animatedRect(base, focused)
+        paint.color = if (focused) Color.rgb(76, 43, 132) else Color.rgb(22, 19, 30)
+        c.drawRoundRect(r, 24f, 24f, paint)
+        if (focused) drawFocusRing(c, r, 24f)
         text.textAlign = Paint.Align.CENTER
         text.color = white
-        text.textSize = 17f
-        c.drawText(label, r.centerX(), r.centerY() + 6f, text)
+        text.textSize = 16f
+        c.drawText(label, r.centerX(), r.centerY() + 5f, text)
     }
 
-    private fun drawCard(c: Canvas, r: RectF, focused: Boolean, hero: Boolean = false) {
-        if (focused) {
-            paint.setShadowLayer(if (hero) 30f else 22f, 0f, 0f, Color.argb(180, 139, 73, 255))
-            setLayerType(LAYER_TYPE_SOFTWARE, paint)
-        } else paint.clearShadowLayer()
-
-        paint.color = if (focused) Color.argb(225, 36, 25, 54) else if (hero) surface else surfaceSoft
-        c.drawRoundRect(r, if (hero) 28f else 18f, if (hero) 28f else 18f, paint)
-        paint.clearShadowLayer()
-
+    private fun drawCard(c: Canvas, r: RectF, focused: Boolean, radius: Float, hero: Boolean = false) {
+        paint.color = if (focused) surfaceHigh else if (hero) Color.rgb(17, 15, 24) else surface
+        c.drawRoundRect(r, radius, radius, paint)
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = if (focused) 2.5f else 1f
-        paint.color = if (focused) purpleBright else Color.argb(32, 255, 255, 255)
-        c.drawRoundRect(r, if (hero) 28f else 18f, if (hero) 28f else 18f, paint)
+        paint.strokeWidth = 1f
+        paint.color = Color.argb(if (focused) 80 else 24, 255, 255, 255)
+        c.drawRoundRect(r, radius, radius, paint)
         paint.style = Paint.Style.FILL
+        if (focused) drawFocusRing(c, r, radius)
+    }
+
+    private fun drawFocusRing(c: Canvas, r: RectF, radius: Float) {
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2.4f
+        paint.color = Color.argb((170 + 70 * focusProgress).toInt().coerceAtMost(240), 188, 145, 255)
+        c.drawRoundRect(r, radius, radius, paint)
+        paint.style = Paint.Style.FILL
+    }
+
+    private fun drawGlyph(c: Canvas, x: Float, y: Float, i: Int, focused: Boolean) {
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = if (focused) 2.8f else 2.2f
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.color = if (focused) purpleBright else Color.rgb(185, 178, 200)
+        when (i) {
+            0 -> {
+                c.drawRoundRect(RectF(x - 15f, y - 11f, x + 15f, y + 11f), 5f, 5f, paint)
+                c.drawPath(Path().apply { moveTo(x - 3f, y - 6f); lineTo(x - 3f, y + 6f); lineTo(x + 7f, y); close() }, paint)
+            }
+            2 -> c.drawRoundRect(RectF(x - 15f, y - 10f, x + 15f, y + 10f), 3f, 3f, paint)
+            3 -> {
+                c.drawArc(RectF(x - 15f, y - 15f, x + 15f, y + 15f), 215f, 110f, false, paint)
+                c.drawArc(RectF(x - 9f, y - 9f, x + 9f, y + 9f), 215f, 110f, false, paint)
+            }
+            4 -> c.drawRoundRect(RectF(x - 15f, y - 10f, x + 15f, y + 11f), 3f, 3f, paint)
+            5 -> for (xx in listOf(-9f, 9f)) for (yy in listOf(-9f, 9f)) c.drawRoundRect(RectF(x + xx - 5f, y + yy - 5f, x + xx + 5f, y + yy + 5f), 2f, 2f, paint)
+            6 -> {
+                c.drawCircle(x - 7f, y + 8f, 6f, paint); c.drawCircle(x + 10f, y + 4f, 6f, paint)
+                c.drawLine(x - 1f, y + 8f, x - 1f, y - 12f, paint); c.drawLine(x - 1f, y - 12f, x + 16f, y - 16f, paint)
+            }
+            else -> c.drawCircle(x, y, 14f, paint)
+        }
+        paint.strokeCap = Paint.Cap.BUTT
+        paint.style = Paint.Style.FILL
+    }
+
+    private fun Canvas.clipRoundRectCompat(r: RectF, radius: Float) {
+        clipPath(Path().apply { addRoundRect(r, radius, radius, Path.Direction.CW) })
+    }
+
+    private fun animateFocus() {
+        focusAnimator?.cancel()
+        focusProgress = 0f
+        focusAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 165L
+            interpolator = DecelerateInterpolator(1.8f)
+            addUpdateListener {
+                focusProgress = it.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         val old = selected
         selected = when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP -> moveUp(selected)
-            KeyEvent.KEYCODE_DPAD_DOWN -> moveDown(selected)
-            KeyEvent.KEYCODE_DPAD_LEFT -> moveLeft(selected)
-            KeyEvent.KEYCODE_DPAD_RIGHT -> moveRight(selected)
+            KeyEvent.KEYCODE_DPAD_UP -> when (selected) {
+                in 1..8 -> 0
+                in 9..12 -> ((selected - 9) * 2 + 1).coerceAtMost(8)
+                13, 14 -> 9
+                else -> selected
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> when (selected) {
+                0 -> 1
+                in 1..8 -> 9 + ((selected - 1) / 2).coerceAtMost(3)
+                in 9..12 -> if (selected <= 10) 13 else 14
+                else -> selected
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> when (selected) {
+                in 2..8 -> selected - 1
+                in 10..12 -> selected - 1
+                14 -> 13
+                else -> selected
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> when (selected) {
+                in 1..7 -> selected + 1
+                in 9..11 -> selected + 1
+                13 -> 14
+                else -> selected
+            }
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                activate(selected)
-                return true
+                activate(); return true
             }
             else -> return super.onKeyDown(keyCode, event)
         }
-        if (old != selected) invalidate()
+        if (old != selected) animateFocus()
         return true
     }
 
-    private fun moveUp(i: Int) = when (i) {
-        1..8 -> 0
-        9..12 -> ((i - 9) * 2 + 1).coerceAtMost(8)
-        13, 14 -> 9
-        else -> i
-    }
-
-    private fun moveDown(i: Int) = when (i) {
-        0 -> 1
-        1..8 -> 9 + ((i - 1) / 2).coerceAtMost(3)
-        9..12 -> if (i <= 10) 13 else 14
-        else -> i
-    }
-
-    private fun moveLeft(i: Int) = when (i) {
-        2..8 -> i - 1
-        10..12 -> i - 1
-        14 -> 13
-        else -> i
-    }
-
-    private fun moveRight(i: Int) = when (i) {
-        1..7 -> i + 1
-        9..11 -> i + 1
-        13 -> 14
-        else -> i
-    }
-
-    private fun activate(i: Int) {
-        val label = when (i) {
-            0 -> "Continuar assistindo"
-            in 1..8 -> shortcuts[i - 1]
-            in 9..12 -> recommendations[i - 9]
-            13 -> "Projetor"
-            14 -> "Ajustes"
-            else -> "TOSS"
+    private fun activate() {
+        val result: Result<Unit>? = when (selected) {
+            0, 1, 9, 10 -> onCinema()
+            2 -> onYouTube()
+            3 -> onHdmi()
+            4 -> onCast()
+            5, 11, 12 -> onFiles()
+            6 -> { onApps(); null }
+            7 -> onMusic()
+            8 -> onBrowser()
+            13 -> { onProjector(); null }
+            14 -> { onSettings(); null }
+            else -> null
         }
-        Toast.makeText(context, "$label — integração em desenvolvimento", Toast.LENGTH_SHORT).show()
+        result?.onFailure { Toast.makeText(context, it.message ?: "Ação indisponível", Toast.LENGTH_SHORT).show() }
     }
 }

@@ -1,38 +1,33 @@
 # TOSS Control
 
-Companion do ecossistema TOSS para tablet/celular.
+Companion Android do ecossistema TOSS para tablet/celular.
 
-## v0.1 planejado
+## Fase 1 implementada
 
-A primeira interface terá:
-- seleção/estado do projetor conectado;
-- Now Playing;
-- D-pad remoto;
-- touchpad e teclado;
-- volume;
-- atalhos Cinema, HDMI, Apps e Arquivos;
-- foco, keystone, brilho e perfil de imagem;
-- envio de arquivos via TOSS Share;
-- navegação inferior: Controle, Projetor, Biblioteca e Ajustes.
+O companion agora possui APK próprio e conversa diretamente com o TOSS Home pela rede local, sem expor ADB ou root. O projetor mostra IP, porta e um PIN de seis dígitos em **Ajustes > Controle remoto**.
+
+Controles atuais:
+- D-pad, OK, Home, Menu e Voltar;
+- YouTube, HDMI, Apps e Ajustes;
+- Projetor, Cinema, Arquivos e Espelhar;
+- foco +/− e volume +/−.
+
+O protocolo v0 usa TCP local na porta `47990`, mensagem `TOSS1|PIN|COMMAND`. O servidor rejeita clientes fora de endereços locais/link-local. O foco continua dependendo do bridge privilegiado do HCS350; quando o backend negar a ação, o tablet mostra o erro em vez de simular sucesso.
 
 ## Arquitetura
 
 ```text
-TOSS Control
+TOSS Control (tablet)
     |
-Control Protocol
+TCP LAN + PIN
     |
-Wi-Fi/LAN (Bluetooth opcional)
-    |
-TOSS Projector
+TOSS Projector / RemoteControlServer
     |
 TOSS Core
     |
-ProjectorControl / SystemControl / MediaControl
+ProjectorControl / Android capability fallbacks
     |
-Device Adapter
+HCS350 Device Adapter
 ```
 
-A UI do tablet não deve conhecer detalhes do HY320 ou de qualquer outro projetor. Isso permite que o mesmo TOSS Control controle futuros TOSS Projector, TOSS Box e outros dispositivos.
-
-A implementação Android do companion será iniciada após estabilizarmos o contrato do protocolo e a navegação visual. O preview pode ser desenvolvido independentemente do hardware.
+Na Fase 2 o protocolo será evoluído para descoberta, estado sincronizado e controles TOSS nativos, mantendo a UI do tablet independente do modelo de projetor.
