@@ -1,88 +1,30 @@
 package com.taly.toss.home
 
 import android.app.Activity
+import android.content.Context
+import android.media.AudioManager
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
-import com.taly.toss.core.projector.MockProjectorControl
-import com.taly.toss.core.projector.ProjectionSource
-import com.taly.toss.core.projector.ProjectorControl
+import com.taly.toss.core.projector.*
 import com.taly.toss.devices.hcs350.Hcs350Detector
 import com.taly.toss.devices.hcs350.Hcs350ProjectorAdapter
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-class MainActivity : Activity() {
-    private lateinit var home: TossHomeView
-    private lateinit var apps: AppsView
-    private lateinit var quickPanel: QuickPanelView
-    private lateinit var projector: ProjectorControlView
-    private lateinit var settings: SettingsView
-    private lateinit var projectorControl: ProjectorControl
-    private lateinit var appCatalog: AppCatalog
-    private lateinit var androidSettings: AndroidSettingsLauncher
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        projectorControl = if (Hcs350Detector.isCurrentDevice()) Hcs350ProjectorAdapter(this) else MockProjectorControl()
-        appCatalog = AppCatalog(this)
-        androidSettings = AndroidSettingsLauncher(this)
-        val installed = appCatalog.load()
-        val youtube = appCatalog.findYouTube(installed)
-
-        val root = FrameLayout(this)
-        home = TossHomeView(
-            context = this,
-            youtubeIcon = youtube?.let { appCatalog.icon(it) },
-            onYouTube = { youtube?.let { appCatalog.launch(it) } ?: Result.failure(IllegalStateException("app não instalado")) },
-            onHdmi = { projectorControl.setSource(ProjectionSource.HDMI) },
-            onApps = { openApps() },
-            onProjector = { openProjector() },
-            onSettings = { openSettings() }
-        )
-        root.addView(home, FrameLayout.LayoutParams(-1, -1))
-
-        apps = AppsView(this, appCatalog) { closeApps() }.apply { visibility = View.GONE }
-        root.addView(apps, FrameLayout.LayoutParams(-1, -1))
-
-        settings = SettingsView(this, { closeSettings() }, { openProjector() }, androidSettings).apply { visibility = View.GONE }
-        root.addView(settings, FrameLayout.LayoutParams(-1, -1))
-
-        quickPanel = QuickPanelView(this, { closeQuickPanel() }, { openProjector() }, androidSettings).apply { visibility = View.GONE }
-        root.addView(quickPanel, FrameLayout.LayoutParams(-1, -1))
-
-        projector = ProjectorControlView(this, projectorControl) { closeProjector() }.apply { visibility = View.GONE }
-        root.addView(projector, FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
-    }
-
-    private fun hideOverlays() {
-        apps.visibility=View.GONE; settings.visibility=View.GONE; quickPanel.visibility=View.GONE; projector.visibility=View.GONE
-    }
-    private fun openApps(){hideOverlays();apps.refresh();apps.visibility=View.VISIBLE;apps.requestFocus()}
-    private fun closeApps(){apps.visibility=View.GONE;home.requestFocus()}
-    private fun openSettings(){hideOverlays();settings.visibility=View.VISIBLE;settings.requestFocus()}
-    private fun closeSettings(){settings.visibility=View.GONE;home.requestFocus()}
-    private fun openProjector(){hideOverlays();projector.visibility=View.VISIBLE;projector.invalidate();projector.requestFocus()}
-    private fun closeProjector(){projector.visibility=View.GONE;home.requestFocus()}
-    private fun openQuickPanel(){hideOverlays();quickPanel.visibility=View.VISIBLE;quickPanel.requestFocus()}
-    private fun closeQuickPanel(){quickPanel.visibility=View.GONE;home.requestFocus()}
-
-    override fun dispatchKeyEvent(event:KeyEvent):Boolean{
-        if(event.action==KeyEvent.ACTION_DOWN){
-            if(event.keyCode==KeyEvent.KEYCODE_PROG_RED){openProjector();return true}
-            if(event.keyCode==KeyEvent.KEYCODE_MENU||event.keyCode==KeyEvent.KEYCODE_SETTINGS){
-                if(quickPanel.visibility==View.VISIBLE) closeQuickPanel() else openQuickPanel()
-                return true
-            }
-        }
-        return super.dispatchKeyEvent(event)
-    }
-
-    override fun onWindowFocusChanged(hasFocus:Boolean){
-        super.onWindowFocusChanged(hasFocus)
-        if(hasFocus){
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        }
-    }
+class MainActivity:Activity(){
+    private lateinit var home:TossHomeView;private lateinit var apps:AppsView;private lateinit var quickPanel:QuickPanelView;private lateinit var projector:ProjectorControlView;private lateinit var settings:SettingsView;private lateinit var remoteInfo:RemoteInfoView;private lateinit var projectorControl:ProjectorControl;private lateinit var appCatalog:AppCatalog;private lateinit var androidSettings:AndroidSettingsLauncher;private lateinit var features:FeatureLauncher;private lateinit var remoteServer:RemoteControlServer
+    override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);projectorControl=if(Hcs350Detector.isCurrentDevice())Hcs350ProjectorAdapter(this)else MockProjectorControl();appCatalog=AppCatalog(this);androidSettings=AndroidSettingsLauncher(this);features=FeatureLauncher(this);remoteServer=RemoteControlServer(this){executeRemote(it)};val installed=appCatalog.load();val youtube=appCatalog.findYouTube(installed);val root=FrameLayout(this)
+        home=TossHomeView(this,youtube?.let{appCatalog.icon(it)},{youtube?.let{appCatalog.launch(it)}?:Result.failure(IllegalStateException("YouTube não instalado"))},{projectorControl.setSource(ProjectionSource.HDMI)},{features.cinema()},{features.cast()},{features.files()},{openApps()},{features.music()},{features.browser()},{openProjector()},{openSettings()});root.addView(home,FrameLayout.LayoutParams(-1,-1))
+        apps=AppsView(this,appCatalog){closeApps()}.apply{visibility=View.GONE};root.addView(apps,FrameLayout.LayoutParams(-1,-1));settings=SettingsView(this,{closeSettings()},{openProjector()},{openRemoteInfo()},androidSettings).apply{visibility=View.GONE};root.addView(settings,FrameLayout.LayoutParams(-1,-1));quickPanel=QuickPanelView(this,{closeQuickPanel()},{openProjector()},androidSettings).apply{visibility=View.GONE};root.addView(quickPanel,FrameLayout.LayoutParams(-1,-1));projector=ProjectorControlView(this,projectorControl){closeProjector()}.apply{visibility=View.GONE};root.addView(projector,FrameLayout.LayoutParams(-1,-1));remoteInfo=RemoteInfoView(this,remoteServer){closeRemoteInfo()}.apply{visibility=View.GONE};root.addView(remoteInfo,FrameLayout.LayoutParams(-1,-1));setContentView(root);remoteServer.start()}
+    private fun hideOverlays(){apps.visibility=View.GONE;settings.visibility=View.GONE;quickPanel.visibility=View.GONE;projector.visibility=View.GONE;remoteInfo.visibility=View.GONE}
+    private fun goHome(){hideOverlays();home.visibility=View.VISIBLE;home.requestFocus()};private fun openApps(){hideOverlays();apps.refresh();apps.visibility=View.VISIBLE;apps.requestFocus()};private fun closeApps(){apps.visibility=View.GONE;home.requestFocus()};private fun openSettings(){hideOverlays();settings.visibility=View.VISIBLE;settings.requestFocus()};private fun closeSettings(){settings.visibility=View.GONE;home.requestFocus()};private fun openProjector(){hideOverlays();projector.visibility=View.VISIBLE;projector.invalidate();projector.requestFocus()};private fun closeProjector(){projector.visibility=View.GONE;home.requestFocus()};private fun openQuickPanel(){hideOverlays();quickPanel.visibility=View.VISIBLE;quickPanel.requestFocus()};private fun closeQuickPanel(){quickPanel.visibility=View.GONE;home.requestFocus()};private fun openRemoteInfo(){hideOverlays();remoteInfo.visibility=View.VISIBLE;remoteInfo.invalidate();remoteInfo.requestFocus()};private fun closeRemoteInfo(){remoteInfo.visibility=View.GONE;openSettings()}
+    override fun dispatchKeyEvent(event:KeyEvent):Boolean{if(event.action==KeyEvent.ACTION_DOWN){if(event.keyCode==KeyEvent.KEYCODE_PROG_RED){openProjector();return true};if(event.keyCode==KeyEvent.KEYCODE_MENU||event.keyCode==KeyEvent.KEYCODE_SETTINGS){if(quickPanel.visibility==View.VISIBLE)closeQuickPanel()else openQuickPanel();return true}};return super.dispatchKeyEvent(event)}
+    private fun executeRemote(command:String):Result<String>{var result:Result<String>?=null;val latch=CountDownLatch(1);runOnUiThread{result=handleRemote(command);latch.countDown()};if(!latch.await(3,TimeUnit.SECONDS))return Result.failure(IllegalStateException("timeout"));return result?:Result.failure(IllegalStateException("sem resposta"))}
+    private fun handleRemote(c:String):Result<String>{return when(c){"PING"->Result.success("TOSS HCS350");"HOME"->{goHome();Result.success("Home")};"MENU"->{openQuickPanel();Result.success("Menu")};"PROJECTOR"->{openProjector();Result.success("Projetor")};"SETTINGS"->{openSettings();Result.success("Ajustes")};"APPS"->{openApps();Result.success("Apps")};"HDMI"->projectorControl.setSource(ProjectionSource.HDMI).map{"HDMI"};"YOUTUBE"->{val y=appCatalog.findYouTube();if(y!=null)appCatalog.launch(y).map{"YouTube"}else Result.failure(IllegalStateException("YouTube não instalado"))};"CINEMA"->features.cinema().map{"Cinema"};"FILES"->features.files().map{"Arquivos"};"MUSIC"->features.music().map{"Música"};"CAST"->features.cast().map{"Espelhar"};"BROWSER"->features.browser().map{"Navegador"};"FOCUS_PLUS"->projectorControl.adjustFocus(1).map{"Foco +"};"FOCUS_MINUS"->projectorControl.adjustFocus(-1).map{"Foco -"};"VOLUME_UP"->{volume(AudioManager.ADJUST_RAISE);Result.success("Volume +")};"VOLUME_DOWN"->{volume(AudioManager.ADJUST_LOWER);Result.success("Volume -")};"UP"->key(KeyEvent.KEYCODE_DPAD_UP);"DOWN"->key(KeyEvent.KEYCODE_DPAD_DOWN);"LEFT"->key(KeyEvent.KEYCODE_DPAD_LEFT);"RIGHT"->key(KeyEvent.KEYCODE_DPAD_RIGHT);"OK"->key(KeyEvent.KEYCODE_DPAD_CENTER);"BACK"->key(KeyEvent.KEYCODE_BACK);else->Result.failure(IllegalArgumentException("comando desconhecido"))}}
+    private fun key(code:Int):Result<String>{dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN,code));dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP,code));return Result.success("Key $code")}
+    private fun volume(direction:Int){(getSystemService(Context.AUDIO_SERVICE)as AudioManager).adjustStreamVolume(AudioManager.STREAM_MUSIC,direction,AudioManager.FLAG_SHOW_UI)}
+    override fun onDestroy(){remoteServer.stop();super.onDestroy()}
+    override fun onWindowFocusChanged(hasFocus:Boolean){super.onWindowFocusChanged(hasFocus);if(hasFocus){@Suppress("DEPRECATION") window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_STABLE}}
 }
