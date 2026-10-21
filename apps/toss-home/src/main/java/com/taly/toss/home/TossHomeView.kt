@@ -15,7 +15,8 @@ class TossHomeView(
     private val onYouTube: () -> Result<Unit> = { Result.failure(IllegalStateException("YouTube não encontrado")) },
     private val onHdmi: () -> Result<Unit> = { Result.failure(UnsupportedOperationException("HDMI indisponível")) },
     private val onApps: () -> Unit = {},
-    private val onProjector: () -> Unit = {}
+    private val onProjector: () -> Unit = {},
+    private val onSettings: () -> Unit = {}
 ) : View(context) {
     private val p=Paint(Paint.ANTI_ALIAS_FLAG); private val t=Paint(Paint.ANTI_ALIAS_FLAG).apply{typeface=Typeface.create("sans",Typeface.NORMAL)}; private val b=Paint(Paint.ANTI_ALIAS_FLAG).apply{typeface=Typeface.create("sans",Typeface.BOLD)}
     private val purple=Color.rgb(151,91,255); private val bright=Color.rgb(190,148,255); private val white=Color.rgb(246,244,251); private val muted=Color.rgb(177,171,191)
@@ -37,6 +38,6 @@ class TossHomeView(
 
     override fun onKeyDown(k:Int,e:KeyEvent?):Boolean{val old=selected;selected=when(k){KeyEvent.KEYCODE_DPAD_UP->up(selected);KeyEvent.KEYCODE_DPAD_DOWN->down(selected);KeyEvent.KEYCODE_DPAD_LEFT->left(selected);KeyEvent.KEYCODE_DPAD_RIGHT->right(selected);KeyEvent.KEYCODE_DPAD_CENTER,KeyEvent.KEYCODE_ENTER->{activate(selected);return true};else->return super.onKeyDown(k,e)};if(old!=selected)invalidate();return true}
     private fun up(i:Int)=when(i){in 1..8->0;in 9..12->((i-9)*2+1).coerceAtMost(8);13,14->9;else->i};private fun down(i:Int)=when(i){0->1;in 1..8->9+((i-1)/2).coerceAtMost(3);in 9..12->if(i<=10)13 else 14;else->i};private fun left(i:Int)=when(i){in 2..8->i-1;in 10..12->i-1;14->13;else->i};private fun right(i:Int)=when(i){in 1..7->i+1;in 9..11->i+1;13->14;else->i}
-    private fun activate(i:Int){when(i){2->onYouTube().onFailure{toast("YouTube: ${it.message ?: "não foi possível abrir"}")};3->onHdmi().onFailure{toast("HDMI: ${it.message ?: "não foi possível abrir"}")};6->onApps();13->onProjector();else->{val label=when(i){0->"Continuar assistindo";in 1..8->shortcuts[i-1];in 9..12->recommendations[i-9];14->"Ajustes";else->"TOSS"};toast("$label — integração em desenvolvimento")}}}
+    private fun activate(i:Int){when(i){2->onYouTube().onFailure{toast("YouTube: ${it.message ?: "não foi possível abrir"}")};3->onHdmi().onFailure{toast("HDMI: ${it.message ?: "não foi possível abrir"}")};6->onApps();13->onProjector();14->onSettings();else->{val label=when(i){0->"Continuar assistindo";in 1..8->shortcuts[i-1];in 9..12->recommendations[i-9];else->"TOSS"};toast("$label — integração em desenvolvimento")}}}
     private fun toast(message:String)=Toast.makeText(context,message,Toast.LENGTH_SHORT).show()
 }
