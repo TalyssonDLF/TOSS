@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "device_id": "hcs350_allwinner_h713",
+  "identity": {
+    "physical_model": "HCS350 LCD Projector",
+    "commercial_aliases": ["HY320 Mini"],
+    "manufacturer": "Allwinner",
+    "product": "h713m_tuna_p3",
+    "device": "h713m-tuna_p3",
+    "board": "exdroid",
+    "soc_family": "Allwinner H713 / sun50iw12p1",
+    "hardware": "sun50iw12p1",
+    "cpu": "4x ARM Cortex-A53",
+    "android_abi": ["armeabi-v7a", "armeabi"],
+    "ram_mb": 1024,
+    "emmc_mib": 7456,
+    "android_version": "11",
+    "sdk_level": 30,
+    "build_fingerprint": "ADT-3/adt3/adt3:10/QTT1.200116.002.B6/6245789:user/release-keys",
+    "kernel": "Linux 5.4.99 armv7l"
+  },
+  "security": {
+    "build_type": "userdebug",
+    "build_tags": "test-keys",
+    "ro_debuggable": true,
+    "ro_secure": true,
+    "selinux": "permissive",
+    "adb_tcp_5555_observed": true,
+    "adb_root_confirmed": true,
+    "avb_version": "2.0",
+    "vbmeta_device_state": "locked",
+    "verified_boot_state": null,
+    "bootloader_locked": null,
+    "notes": "AVB reports device_state=locked; other lock/verified properties were blank. Do not infer a fully verified/locked boot chain from this field alone."
+  },
+  "android_capabilities": {
+    "dynamic_partitions": true,
+    "virtual_ab": true,
+    "active_slot": "_a",
+    "slot_b_logical_extents_present": false,
+    "system_app_platform_signature_observed": true
+  },
+  "projector": {
+    "focus": {
+      "supported": true,
+      "evidence": "CONFIRMED",
+      "method": "OEM Android input path",
+      "focus_in_keycode": 168,
+      "focus_out_keycode": 169,
+      "notes": "Runtime tested on hardware. Android key injection requires an appropriate privileged boundary in TOSS."
+    },
+    "keystone": {
+      "supported": true,
+      "evidence": "CONFIRMED",
+      "method": "SurfaceFlinger OEM Binder transaction",
+      "binder_service": "SurfaceFlinger",
+      "interface_token": "android.ui.ISurfaceComposer",
+      "transaction_code": 1050,
+      "parameter_order": ["lbx", "lby", "ltx", "lty", "rtx", "rty", "rbx", "rby"],
+      "persist_properties": {
+        "lbx": "persist.display.keystone_lbx",
+        "lby": "persist.display.keystone_lby",
+        "ltx": "persist.display.keystone_ltx",
+        "lty": "persist.display.keystone_lty",
+        "rtx": "persist.display.keystone_rtx",
+        "rty": "persist.display.keystone_rty",
+        "rbx": "persist.display.keystone_rbx",
+        "rby": "persist.display.keystone_rby"
+      },
+      "notes": "Runtime Binder preview tested with a 0.001 delta and restored. Persist-property write path is mapped but not runtime-tested by TOSS."
+    },
+    "auto_keystone": {
+      "supported": true,
+      "evidence": "MAPPED",
+      "oem_package": "com.manual.focus",
+      "oem_apk": "/system/app/AutoKsService/AutoKsService.apk",
+      "sensor": "accelerometer / kxtj3",
+      "backend": "SurfaceFlinger transaction 1050",
+      "notes": "OEM implementation statically mapped; TOSS runtime control not yet tested."
+    },
+    "hdmi_input": {
+      "supported": true,
+      "evidence": "CONFIRMED",
+      "logical_source": "HDMI1",
+      "tv_input_id": "com.softwinner.vis/.HdmiInputService/HW1",
+      "hardware_input_id": 1,
+      "viewer_component": "com.softwinner.awlivetv/.MainActivity",
+      "viewer_extra": {"input_source": "HDMI1"},
+      "pipeline_resolution": "1280x720",
+      "notes": "Direct cold launch into HDMI1 and no-signal handling confirmed. Real external HDMI video/audio remains untested because no source/cable was available."
+    },
+    "brightness": {
+      "supported": null,
+      "evidence": "UNKNOWN",
+      "method": "unknown"
+    }
+  },
+  "input": {
+    "devices": {
+      "ir_uinput": "/dev/input/event4",
+      "accelerometer": "/dev/input/event3"
+    },
+    "keylayout_files": [
+      "/vendor/usr/keylayout/sunxi-ir-uinput.kl",
+      "/vendor/usr/keylayout/sunxi-ir-vendor.kl",
+      "/vendor/usr/keylayout/sunxi-ir.kl"
+    ],
+    "special_keys": {
+      "focus_in_linux_code": 168,
+      "focus_out_linux_code": 169,
+      "focus_in_android": "KEYCODE_ZOOM_IN",
+      "focus_out_android": "KEYCODE_ZOOM_OUT"
+    }
+  },
+  "storage": {
+    "emmc_device": "/dev/block/mmcblk0",
+    "super_bytes": 2147483648,
+    "userdata_partition": "/dev/block/mmcblk0p26",
+    "active_logical_partitions": ["system_a", "vendor_a", "product_a"]
+  },
+  "thermal": {
+    "thermal_zones_observed": 4,
+    "cooling_devices_observed": 3,
+    "severe_cpu_temperature_c_observed": [83, 86],
+    "throttling_observed": true,
+    "notes": "Thermal policy and cooling/LED relationships still require mapping before any modification."
+  },
+  "recovery": {
+    "backup_completed": true,
+    "super_backup_completed": true,
+    "super_sha256": "0B4F10BF455F80B3B190F75754426D1949AF5FEBEDF63733D44596DF9EBC4D2E",
+    "restore_tested": false,
+    "recovery_method": "unknown",
+    "notes": "Backup is archival, not yet recovery-ready. Do not flash until a restore path is understood and tested."
+  },
+  "oem_components": {
+    "projector_settings": "com.example.settings",
+    "auto_keystone": "com.manual.focus",
+    "source_shortcut": "com.softwinner.awsource",
+    "live_tv": "com.softwinner.awlivetv",
+    "video_input_service": "com.softwinner.vis",
+    "manager": "com.softwinner.awmanager",
+    "tv_volume": "com.softwinner.tvvolume"
+  },
+  "artifacts": {
+    "ProjectorSettings.apk": "670F25BBE4EE42D9E1E7248E57A8B29417ECFE0859684EB4F5C8DB70F515EC07",
+    "AutoKsService.apk": "135E8A340288D032CC0896C31EB0CA436FC6AF7B06E94E716193E3A74FF5C13C",
+    "AwManager.apk": "8B2271A0EC5D37962DBE6F12C4F3CDCAADCCB50FBBB0C8AD11148552F3FE311B",
+    "AwSource.apk": "7FC761EF53909D5F353DFB9EE88ED589F3C7B56221BB0D6DDB40C2E172B12BD0",
+    "AwTvVolume.apk": "D8AEA89A7A32556F38E1CFAC52C3932F9A50775DFAE68562178038AE008FBD73",
+    "SettingsAssist.apk": "28F1FB1839224A386DB687840A32A38735E7265F04EC1B6D59AE4F603F5A8D1A",
+    "AwLiveTv.apk": "983BBB0DE1A6768C0FF58EEB4F99F6BBA8CEEC5EC7BCEAA60723D37BF3B1CEDB",
+    "VideoInputService.apk": "3F6BE55CD28CF94053B8F9AFF8249B25172667EBBB033F45A13B5A2B7E53E896"
+  }
+}
