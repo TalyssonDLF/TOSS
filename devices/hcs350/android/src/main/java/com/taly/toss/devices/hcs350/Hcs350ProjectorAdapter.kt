@@ -79,9 +79,8 @@ class Hcs350ProjectorAdapter(
             putExtra(INPUT_SOURCE_EXTRA, HDMI_1)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        check(intent.resolveActivity(appContext.packageManager) != null) {
-            "OEM AwLiveTV activity is not available"
-        }
+        // Explicit components can be launched even when Android package visibility hides
+        // them from resolve/query APIs. ActivityNotFoundException is captured by setSource().
         appContext.startActivity(intent)
     }
 
