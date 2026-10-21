@@ -150,7 +150,7 @@ class TossHomeView(context: Context) : View(context) {
         paint.strokeCap = Paint.Cap.ROUND
         paint.color = if (focused) purpleBright else Color.rgb(193, 183, 211)
         when (index) {
-            0 -> { // cinema/play
+            0 -> {
                 c.drawRoundRect(RectF(x - 15, y - 11, x + 15, y + 11), 5f, 5f, paint)
                 val p = Path().apply { moveTo(x - 3, y - 6); lineTo(x - 3, y + 6); lineTo(x + 7, y); close() }
                 c.drawPath(p, paint)
@@ -244,29 +244,29 @@ class TossHomeView(context: Context) : View(context) {
     }
 
     private fun moveUp(i: Int) = when (i) {
-        1..8 -> 0
-        9..12 -> ((i - 9) * 2 + 1).coerceAtMost(8)
+        in 1..8 -> 0
+        in 9..12 -> ((i - 9) * 2 + 1).coerceAtMost(8)
         13, 14 -> 9
         else -> i
     }
 
     private fun moveDown(i: Int) = when (i) {
         0 -> 1
-        1..8 -> 9 + ((i - 1) / 2).coerceAtMost(3)
-        9..12 -> if (i <= 10) 13 else 14
+        in 1..8 -> 9 + ((i - 1) / 2).coerceAtMost(3)
+        in 9..12 -> if (i <= 10) 13 else 14
         else -> i
     }
 
     private fun moveLeft(i: Int) = when (i) {
-        2..8 -> i - 1
-        10..12 -> i - 1
+        in 2..8 -> i - 1
+        in 10..12 -> i - 1
         14 -> 13
         else -> i
     }
 
     private fun moveRight(i: Int) = when (i) {
-        1..7 -> i + 1
-        9..11 -> i + 1
+        in 1..7 -> i + 1
+        in 9..11 -> i + 1
         13 -> 14
         else -> i
     }
