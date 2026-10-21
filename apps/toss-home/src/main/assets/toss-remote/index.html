@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#09070f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TOSS Control">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <title>TOSS Control</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07060b;--panel:rgba(28,22,40,.82);--panel2:rgba(42,31,58,.78);--line:rgba(255,255,255,.09);--text:#f8f6fb;--muted:#aaa2b7;--violet:#b77cff;--violet2:#7b36e8;--good:#62e6b1;--bad:#ff7b91}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;color:var(--text);overscroll-behavior:none}
+    body:before{content:"";position:fixed;inset:-20%;background:radial-gradient(circle at 50% 0%,rgba(132,58,225,.28),transparent 38%),radial-gradient(circle at 100% 45%,rgba(84,33,143,.18),transparent 28%);pointer-events:none}
+    main{position:relative;max-width:560px;margin:auto;min-height:100svh;padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 24px)}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.brand{font-weight:800;letter-spacing:.08em;font-size:15px}.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}.dot{width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 14px currentColor}.dot.ok{background:var(--good)}
+    .hero{padding:22px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(145deg,rgba(49,35,67,.86),rgba(16,13,24,.92));box-shadow:0 24px 70px rgba(0,0,0,.3);backdrop-filter:blur(18px)}
+    .eyebrow{font-size:11px;letter-spacing:.14em;color:var(--violet);font-weight:800}.hero h1{font-size:29px;line-height:1.05;margin:8px 0 7px}.hero p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}.pair{display:flex;gap:10px;margin-top:17px}.pair input{min-width:0;flex:1;border:1px solid var(--line);border-radius:16px;background:rgba(7,6,11,.7);padding:13px 14px;color:#fff;font-size:16px;outline:none}.pair input:focus{border-color:rgba(183,124,255,.75);box-shadow:0 0 0 3px rgba(183,124,255,.12)}
+    .section-title{display:flex;justify-content:space-between;align-items:end;margin:23px 2px 10px}.section-title strong{font-size:14px}.section-title span{font-size:11px;color:var(--muted)}
+    .remote{border:1px solid var(--line);background:rgba(17,14,24,.78);border-radius:30px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.24)}
+    button{border:1px solid var(--line);color:var(--text);background:var(--panel);font:inherit;font-weight:700;touch-action:manipulation;transition:transform .11s ease,background .11s ease,border-color .11s ease,box-shadow .11s ease}button:active{transform:scale(.94);background:rgba(123,54,232,.48);border-color:rgba(183,124,255,.72);box-shadow:0 0 24px rgba(142,72,239,.2)}
+    .dpad{width:230px;height:230px;margin:2px auto 19px;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:8px}.dpad button{border-radius:22px;font-size:24px}.up{grid-column:2}.left{grid-row:2;grid-column:1}.ok{grid-row:2;grid-column:2;background:linear-gradient(145deg,var(--violet2),#54229d);border-color:rgba(210,178,255,.35);font-size:14px!important}.right{grid-row:2;grid-column:3}.down{grid-row:3;grid-column:2}
+    .nav,.grid,.projector{display:grid;gap:9px}.nav{grid-template-columns:repeat(3,1fr);margin-bottom:9px}.grid{grid-template-columns:repeat(2,1fr)}.projector{grid-template-columns:repeat(2,1fr);margin-top:9px}.nav button,.grid button,.projector button{min-height:58px;border-radius:18px;font-size:13px}.grid button{min-height:68px;background:linear-gradient(145deg,var(--panel2),rgba(20,16,28,.85))}.projector button{color:#e4ccff}
+    .volume{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:9px;margin:9px 0}.volume button{height:54px;border-radius:18px}.volume .label{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025)}
+    #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 22px);transform:translate(-50%,30px);opacity:0;pointer-events:none;padding:11px 16px;border:1px solid var(--line);border-radius:99px;background:rgba(24,19,33,.95);box-shadow:0 15px 40px rgba(0,0,0,.4);font-size:12px;white-space:nowrap;transition:.22s ease}#toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(min-width:700px){main{padding-left:30px;padding-right:30px}.hero{padding:28px}}
+  </style>
+</head>
+<body>
+<main>
+  <header><div class="brand">TOSS CONTROL</div><div class="status"><i id="dot" class="dot"></i><span id="state">não pareado</span></div></header>
+  <section class="hero">
+    <div class="eyebrow">LOCAL • HCS350</div><h1>Seu projetor,<br>na sua mão.</h1><p>Controle o TOSS pela mesma rede Wi‑Fi. Informe o PIN exibido no projetor uma única vez neste aparelho.</p>
+    <div class="pair"><input id="pin" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="PIN de 6 dígitos"><button onclick="pair()" style="border-radius:16px;padding:0 18px;background:#7134c9">Conectar</button></div>
+  </section>
+  <div class="section-title"><strong>Controle</strong><span>resposta tátil + LAN</span></div>
+  <section class="remote">
+    <div class="dpad"><button class="up" onclick="cmd('UP')">▲</button><button class="left" onclick="cmd('LEFT')">◀</button><button class="ok" onclick="cmd('OK')">OK</button><button class="right" onclick="cmd('RIGHT')">▶</button><button class="down" onclick="cmd('DOWN')">▼</button></div>
+    <div class="nav"><button onclick="cmd('BACK')">↩ Voltar</button><button onclick="cmd('HOME')">⌂ Home</button><button onclick="cmd('MENU')">☰ Menu</button></div>
+    <div class="volume"><button onclick="cmd('VOLUME_DOWN')">−</button><div class="label">VOLUME</div><button onclick="cmd('VOLUME_UP')">＋</button></div>
+    <div class="grid"><button onclick="cmd('YOUTUBE')">YouTube</button><button onclick="cmd('HDMI')">HDMI</button><button onclick="cmd('APPS')">Aplicativos</button><button onclick="cmd('SETTINGS')">Ajustes</button><button onclick="cmd('CINEMA')">Cinema</button><button onclick="cmd('FILES')">Arquivos</button></div>
+    <div class="projector"><button onclick="cmd('FOCUS_MINUS')">Foco −</button><button onclick="cmd('FOCUS_PLUS')">Foco ＋</button><button onclick="cmd('PROJECTOR')">Projetor</button><button onclick="cmd('CAST')">Espelhar</button></div>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+  const pinEl=document.getElementById('pin'), state=document.getElementById('state'), dot=document.getElementById('dot'), toast=document.getElementById('toast');
+  pinEl.value=localStorage.getItem('tossPin')||'';
+  let paired=false,toastTimer;
+  function feedback(){ if(navigator.vibrate) navigator.vibrate(12); }
+  function say(text,bad=false){clearTimeout(toastTimer);toast.textContent=text;toast.style.color=bad?'#ff9aaa':'#f8f6fb';toast.classList.add('show');toastTimer=setTimeout(()=>toast.classList.remove('show'),1700)}
+  function setPaired(ok){paired=ok;dot.classList.toggle('ok',ok);state.textContent=ok?'conectado':'não pareado'}
+  async function send(command){
+    const pin=pinEl.value.trim(); if(pin.length!==6){say('Digite o PIN de 6 dígitos',true);return null}
+    feedback();
+    try{const body=new URLSearchParams({pin,command});const r=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.message||'Falha');setPaired(true);return data}catch(e){setPaired(false);say(e.message||'Sem conexão',true);return null}
+  }
+  async function pair(){const data=await send('PING');if(data){localStorage.setItem('tossPin',pinEl.value.trim());say('TOSS conectado')}}
+  async function cmd(command){const data=await send(command);if(data&&command!=='PING')say(data.message||'OK')}
+  if(pinEl.value.length===6) pair();
+</script>
+</body>
+</html>
