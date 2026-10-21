@@ -32,4 +32,5 @@ android {
 
 dependencies {
     implementation(project(":core:projector-control"))
+    implementation(project(":devices:hcs350:android"))
 }
