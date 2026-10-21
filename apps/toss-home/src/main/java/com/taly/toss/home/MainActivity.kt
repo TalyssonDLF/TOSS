@@ -6,6 +6,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
 import com.taly.toss.core.projector.MockProjectorControl
+import com.taly.toss.core.projector.ProjectionSource
 import com.taly.toss.core.projector.ProjectorControl
 import com.taly.toss.devices.hcs350.Hcs350Detector
 import com.taly.toss.devices.hcs350.Hcs350ProjectorAdapter
@@ -25,7 +26,11 @@ class MainActivity : Activity() {
         }
 
         val root = FrameLayout(this)
-        home = TossHomeView(this)
+        home = TossHomeView(
+            context = this,
+            onProjector = { openProjector() },
+            onHdmi = { projectorControl.setSource(ProjectionSource.HDMI) }
+        )
         root.addView(home, FrameLayout.LayoutParams(-1, -1))
         quickPanel = QuickPanelView(this).apply { visibility = View.GONE }
         root.addView(quickPanel, FrameLayout.LayoutParams(-1, -1))
